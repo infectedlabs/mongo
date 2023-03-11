@@ -1,46 +1,40 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-
+const cors = require('cors');
 const app = express();
-const PORT = 3001;
 
-// Connect to the MongoDB database
-mongoose.connect('mongodb://localhost:27017/wl-app', { useNewUrlParser: true, useUnifiedTopology: true });
+// add cors middleware
+app.use(cors());
 
-// Define the User schema
-const userSchema = new mongoose.Schema({
-  walletAddress: String,
-  discordId: String,
-  discordUsername: String,
+const port = process.env.PORT || 3001;
+
+mongoose.connect('mongodb://localhost:27017/userdata', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
-const User = mongoose.model('User', userSchema);
+const userDataSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+});
 
-// Use body-parser middleware to extract request body
-app.use(bodyParser.json());
+const UserData = mongoose.model('UserData', userDataSchema);
 
-// Define the API endpoint
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
 app.post('/api/users', async (req, res) => {
-  const { walletAddress, discordId, discordUsername } = req.body;
-
-  // Create a new User document and save it to the database
-  const user = new User({
-    walletAddress,
-    discordId,
-    discordUsername,
-  });
-
+  const { name, email } = req.body;
+  const userData = new UserData({ name, email });
   try {
-    await user.save();
-    res.status(201).json({ message: 'User data saved successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error saving user data' });
+    await userData.save();
+    res.status(201).send({ message: 'User data saved successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: 'Error saving user data.' });
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
 });
